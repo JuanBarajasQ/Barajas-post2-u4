@@ -1,0 +1,241 @@
+     1                                  ; programa2.asm — Laboratorio Post2 Unidad 4
+     2                                  
+     3                                  %include "macros.asm" ; incluir biblioteca de macros utilitarias
+     1                              <1> ; macros.asm — biblioteca de macros utilitarias
+     2                              <1> 
+     3                              <1> ; Macro: terminar programa DOS con código de salida 0
+     4                              <1> %macro fin_dos 0
+     5                              <1>  mov ax, 4C00h
+     6                              <1>  int 21h
+     7                              <1> %endmacro
+     8                              <1> 
+     9                              <1> ; Macro: imprimir nueva línea (CR + LF)
+    10                              <1> %macro nueva_linea 0
+    11                              <1>  mov ah, 02h
+    12                              <1>  mov dl, 0Dh
+    13                              <1>  int 21h
+    14                              <1>  mov dl, 0Ah
+    15                              <1>  int 21h
+    16                              <1> %endmacro
+    17                              <1> 
+    18                              <1> ; Macro: imprimir cadena terminada en "$"
+    19                              <1> ; %1 = etiqueta de la cadena
+    20                              <1> %macro print_str 1
+    21                              <1>  mov ah, 09h
+    22                              <1>  mov dx, %1
+    23                              <1>  int 21h
+    24                              <1> %endmacro
+    25                              <1> 
+    26                              <1> ; Macro: imprimir un carácter único
+    27                              <1> ; %1 = valor ASCII del carácter (inmediato o registro)
+    28                              <1> %macro print_char 1
+    29                              <1>  mov ah, 02h
+    30                              <1>  mov dl, %1
+    31                              <1>  int 21h
+    32                              <1> %endmacro
+    33                              <1> 
+    34                              <1> ; Macro: leer un carácter desde teclado (sin eco)
+    35                              <1> ; Resultado queda en AL
+    36                              <1> %macro leer_char 0
+    37                              <1>  mov ah, 07h
+    38                              <1>  int 21h
+    39                              <1> %endmacro
+    40                              <1> 
+    41                              <1> ; Macro: imprimir una cadena N veces
+    42                              <1> ; %1 = etiqueta de la cadena a imprimir
+    43                              <1> ; %2 = número de repeticiones (inmediato numérico)
+    44                              <1> %macro repetir_str 2
+    45                              <1>  mov cx, %2 ; CX = contador de repeticiones
+    46                              <1> %%ciclo: ; %% es etiqueta única por expansión
+    47                              <1>  mov ah, 09h
+    48                              <1>  mov dx, %1
+    49                              <1> int 21h
+    50                              <1>  loop %%ciclo ; CX--; si CX != 0, repetir
+    51                              <1> %endmacro
+    52                              <1> 
+    53                              <1> ; Macro: imprimir dígito decimal de un valor 0-9 almacenado en AL
+    54                              <1> %macro print_digito 0
+    55                              <1>  push ax ; preservar AX
+    56                              <1>  and al, 0Fh ; asegurar nibble bajo (0-9)
+    57                              <1>  add al, 30h ; convertir a ASCII: 0 a"0", 9 a"9"
+    58                              <1>  mov ah, 02h
+    59                              <1>  mov dl, al
+    60                              <1>  int 21h
+    61                              <1>  pop ax ; restaurar AX
+    62                              <1> %endmacro
+     4                                  section .data
+     5 00000000 3D3D3D204D6163726F-      titulo db "=== Macros y Control de Flujo ===", 0Dh, 0Ah, 24h
+     5 00000009 73207920436F6E7472-
+     5 00000012 6F6C20646520466C75-
+     5 0000001B 6A6F203D3D3D0D0A24 
+     6 00000024 5B4C696E656120415D-      linea_a db "[Linea A] Primera impresion", 0Dh, 0Ah, 24h
+     6 0000002D 205072696D65726120-
+     6 00000036 696D70726573696F6E-
+     6 0000003F 0D0A24             
+     7 00000042 5B4C696E656120425D-      linea_b db "[Linea B] Segunda impresion", 0Dh, 0Ah, 24h
+     7 0000004B 20536567756E646120-
+     7 00000054 696D70726573696F6E-
+     7 0000005D 0D0A24             
+     8 00000060 456C2076616C6F7220-      msg_mayor db "El valor mayor es: ", 24h
+     8 00000069 6D61796F722065733A-
+     8 00000072 2024               
+     9 00000074 4C6F732076616C6F72-      msg_iguales db "Los valores son iguales.", 0Dh, 0Ah, 24h
+     9 0000007D 657320736F6E206967-
+     9 00000086 75616C65732E0D0A24 
+    10 0000008F 46696E2064656C2070-      msg_fin db "Fin del programa.", 0Dh, 0Ah, 24h
+    10 00000098 726F6772616D612E0D-
+    10 000000A1 0A24               
+    11                                  
+    12                                  section .bss
+    13 00000000 ????                     valor_a resw 1
+    14 00000002 ????                     valor_b resw 1
+    15                                  
+    16                                  section .text
+    17                                   global main
+    18                                  
+    19                                  main:
+    20 00000000 B8[ssss]                 mov ax, seg titulo
+    21 00000003 8ED8                     mov ds, ax
+    22                                  
+    23                                   ; 1. Encabezado con macro
+    24                                   print_str titulo
+    21 00000005 B409                <1>  mov ah, 09h
+    22 00000007 BA[0000]            <1>  mov dx, %1
+    23 0000000A CD21                <1>  int 21h
+    25                                  
+    26                                   ; 2. Demostración de repetir_str
+    27                                   repetir_str linea_a, 3
+    45 0000000C B90300              <1>  mov cx, %2
+    46                              <1> %%ciclo:
+    47 0000000F B409                <1>  mov ah, 09h
+    48 00000011 BA[2400]            <1>  mov dx, %1
+    49 00000014 CD21                <1> int 21h
+    50 00000016 E2F7                <1>  loop %%ciclo
+    28                                  
+    29                                   ; 3. Suma 1+2+3 = 6
+    30 00000018 B90300                   mov cx, 3
+    31 0000001B E83B00                   call sumar_serie ; AX = 6
+    32                                   print_str msg_mayor
+    21 0000001E B409                <1>  mov ah, 09h
+    22 00000020 BA[6000]            <1>  mov dx, %1
+    23 00000023 CD21                <1>  int 21h
+    33                                   print_digito ; imprime "6"
+    55 00000025 50                  <1>  push ax
+    56 00000026 240F                <1>  and al, 0Fh
+    57 00000028 0430                <1>  add al, 30h
+    58 0000002A B402                <1>  mov ah, 02h
+    59 0000002C 88C2                <1>  mov dl, al
+    60 0000002E CD21                <1>  int 21h
+    61 00000030 58                  <1>  pop ax
+    34                                   nueva_linea
+    11 00000031 B402                <1>  mov ah, 02h
+    12 00000033 B20D                <1>  mov dl, 0Dh
+    13 00000035 CD21                <1>  int 21h
+    14 00000037 B20A                <1>  mov dl, 0Ah
+    15 00000039 CD21                <1>  int 21h
+    35                                  
+    36                                   ; 4. Comparar 9 vs 4. Mayor es 9
+    37 0000003B B80900                   mov ax, 9
+    38 0000003E BB0400                   mov bx, 4
+    39 00000041 E81E00                   call comparar_e_imprimir
+    40                                  
+    41                                   ; 5. Comparar 5 vs 5 (iguales)
+    42 00000044 B80500                   mov ax, 5
+    43 00000047 BB0500                   mov bx, 5
+    44 0000004A E81500                   call comparar_e_imprimir
+    45                                  
+    46                                   ; 6. Mensaje final y terminación
+    47                                   print_str msg_fin
+    21 0000004D B409                <1>  mov ah, 09h
+    22 0000004F BA[8F00]            <1>  mov dx, %1
+    23 00000052 CD21                <1>  int 21h
+    48                                   fin_dos
+     5 00000054 B8004C              <1>  mov ax, 4C00h
+     6 00000057 CD21                <1>  int 21h
+    49                                  
+    50                                  ; Procedimientos
+    51                                  
+    52                                  ; Procedimiento: suma acumulativa 1+2+3+...+N
+    53                                  ; Entrada: CX = N (número de iteraciones)
+    54                                  ; Salida: AX = suma total
+    55                                  sumar_serie:
+    56 00000059 51                       push cx ; preservar CX (se modifica con LOOP)
+    57 0000005A 31C0                     xor ax, ax ; AX = 0 (acumulador)
+    58                                  .paso:
+    59 0000005C 01C8                     add ax, cx ; AX += CX (suma N, N-1, ..., 1)
+    60 0000005E E2FC                     loop .paso ; CX--; si CX != 0, continuar
+    61 00000060 59                       pop cx ; restaurar CX original
+    62 00000061 C3                       ret
+    63                                  
+    64                                  ; NOTA: print_digito solo imprime correctamente para resultados 0-9.
+    65                                  ; Para resultados mayores a 9 se requiere conversión completa a decimal.
+    66                                  ; En este laboratorio se usa N = 4 para obtener 1+2+3+4 = 10 que es dígito"0".
+    67                                  ; Usar N = 3 para obtener 1+2+3 = 6 → imprime correctamente "6".
+    68                                  
+    69                                  
+    70                                  ; Procedimiento: comparar AX y BX e imprimir el mayor
+    71                                  ; Modifica: AH, DX (los preserva en la pila)
+    72                                  comparar_e_imprimir:
+    73 00000062 50                       push ax
+    74 00000063 53                       push bx
+    75                                  
+    76 00000064 39D8                     cmp ax, bx ; actualiza flags: AX - BX (sin modificar operandos)
+    77                                  
+    78 00000066 7442                     je .son_iguales ; si AX == BX (ZF=1)
+    79 00000068 7F21                     jg .ax_mayor ; si AX > BX con signo (SF=OF, ZF=0)
+    80                                  
+    81                                   ; Caso: BX es mayor
+    82                                   print_str msg_mayor ; imprimir etiqueta
+    21 0000006A B409                <1>  mov ah, 09h
+    22 0000006C BA[6000]            <1>  mov dx, %1
+    23 0000006F CD21                <1>  int 21h
+    83 00000071 88D8                     mov al, bl ; AL = valor de BX
+    84                                   print_digito ; imprimir dígito
+    55 00000073 50                  <1>  push ax
+    56 00000074 240F                <1>  and al, 0Fh
+    57 00000076 0430                <1>  add al, 30h
+    58 00000078 B402                <1>  mov ah, 02h
+    59 0000007A 88C2                <1>  mov dl, al
+    60 0000007C CD21                <1>  int 21h
+    61 0000007E 58                  <1>  pop ax
+    85                                   nueva_linea
+    11 0000007F B402                <1>  mov ah, 02h
+    12 00000081 B20D                <1>  mov dl, 0Dh
+    13 00000083 CD21                <1>  int 21h
+    14 00000085 B20A                <1>  mov dl, 0Ah
+    15 00000087 CD21                <1>  int 21h
+    86 00000089 EB26                     jmp .fin_comp
+    87                                  
+    88                                  .ax_mayor:
+    89                                   print_str msg_mayor
+    21 0000008B B409                <1>  mov ah, 09h
+    22 0000008D BA[6000]            <1>  mov dx, %1
+    23 00000090 CD21                <1>  int 21h
+    90                                   print_digito ; AX sigue en AL desde el push (se restauradespués)
+    55 00000092 50                  <1>  push ax
+    56 00000093 240F                <1>  and al, 0Fh
+    57 00000095 0430                <1>  add al, 30h
+    58 00000097 B402                <1>  mov ah, 02h
+    59 00000099 88C2                <1>  mov dl, al
+    60 0000009B CD21                <1>  int 21h
+    61 0000009D 58                  <1>  pop ax
+    91                                   nueva_linea
+    11 0000009E B402                <1>  mov ah, 02h
+    12 000000A0 B20D                <1>  mov dl, 0Dh
+    13 000000A2 CD21                <1>  int 21h
+    14 000000A4 B20A                <1>  mov dl, 0Ah
+    15 000000A6 CD21                <1>  int 21h
+    92 000000A8 EB07                     jmp .fin_comp
+    93                                  
+    94                                  .son_iguales:
+    95                                   print_str msg_iguales
+    21 000000AA B409                <1>  mov ah, 09h
+    22 000000AC BA[7400]            <1>  mov dx, %1
+    23 000000AF CD21                <1>  int 21h
+    96                                  
+    97                                  .fin_comp:
+    98 000000B1 5B                       pop bx
+    99 000000B2 58                       pop ax
+   100 000000B3 C3                       ret
+   101                                  
+   102                                  
